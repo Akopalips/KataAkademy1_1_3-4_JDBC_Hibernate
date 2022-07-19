@@ -11,7 +11,7 @@ import java.sql.ResultSet;
 public class UserDaoJDBCImpl implements UserDao {
 
     private void simpleVoidQuery(String query) {
-        Connection con = Util.getTestConnection();
+        Connection con = Util.JDBCGetTestConnection();
         try {
             con.createStatement().executeUpdate(query);
         } catch (SQLException e) {
@@ -40,7 +40,7 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public List<User> getAllUsers() {
-        Connection con = Util.getTestConnection();
+        Connection con = Util.JDBCGetTestConnection();
         List<User> result = new ArrayList<>();
         try {
             ResultSet queryResponse = con.createStatement().executeQuery("select * from testUserTable;");

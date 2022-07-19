@@ -24,7 +24,6 @@ public class Main {
         }
         service.cleanUsersTable();
         service.dropUsersTable();
-
     }
 //    Создание таблицы User(ов)
 //    Добавление 4 User(ов) в таблицу с данными на свой выбор. После каждого добавления должен быть вывод в консоль
