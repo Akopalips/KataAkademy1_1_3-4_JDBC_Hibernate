@@ -12,48 +12,22 @@ public class UserDaoJDBCImpl implements UserDao {
 
     public void createUsersTable() {
         try (Statement createTable = connection.createStatement()) {
-            connection.setAutoCommit(false);//неявное начало транзакции == start transaction
             createTable.executeUpdate("create table if not exists " + table +
                             "(name text not null, " +
                             "lastName text not null, " +
                             "age tinyint not null, " +
                             "id serial primary key)");
-            connection.commit();//явное окончание транзакции
         } catch (SQLException e) {
             System.out.println("При создании таблицы возникла ошибка: " + e.getMessage());
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackE) {
-                System.out.println("При откате изменений возникла ошибка: " + rollbackE);
-            }
-        } finally {
-            try{
-                connection.setAutoCommit(true);//неявное окончание транзакции == commit
-            }catch (SQLException e){
-                System.out.println("Транзакция не была завершена.");
-            }
-        }
+        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 
     public void dropUsersTable() {
         try (Statement dropTable = connection.createStatement()) {
-            connection.setAutoCommit(false);//неявное начало транзакции == start transaction
             dropTable.executeUpdate("drop table if exists " + table);
-            connection.commit();//явное окончание транзакции
         } catch (SQLException e) {
             System.out.println("При удалении таблицы возникла ошибка: " + e.getMessage());
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackE) {
-                System.out.println("При откате изменений возникла ошибка: " + rollbackE);
-            }
-        } finally {
-            try{
-                connection.setAutoCommit(true);//неявное окончание транзакции == commit
-            }catch (SQLException e){
-                System.out.println("Транзакция не была завершена.");
-            }
-        }
+        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 
     public void saveUser(String name, String lastName, byte age) {
@@ -123,22 +97,9 @@ public class UserDaoJDBCImpl implements UserDao {
 
     public void cleanUsersTable() {
         try (Statement remove = connection.createStatement()) {
-            connection.setAutoCommit(false);//неявное начало транзакции == start transaction
             remove.executeUpdate("truncate table " + table);
-            connection.commit();//явное окончание транзакции
         } catch (SQLException e) {
             System.out.println("При очищении таблицы возникла ошибка: " + e.getMessage());
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackE) {
-                System.out.println("При откате изменений возникла ошибка: " + rollbackE);
-            }
-        } finally {
-            try{
-                connection.setAutoCommit(true);//неявное окончание транзакции == commit
-            }catch (SQLException e){
-                System.out.println("Транзакция не была завершена.");
-            }
-        }
+        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 }
