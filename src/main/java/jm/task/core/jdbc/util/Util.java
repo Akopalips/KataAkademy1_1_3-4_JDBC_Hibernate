@@ -15,41 +15,31 @@ import java.util.logging.Level;
 
 public class Util {
     private static Connection connectionCache = null;
-
-    public static Connection JDBCGetMySQLConnection(
-            String host, String db, String user, String pass, int port
-    ) {
-        try {
-            return (connectionCache == null ?
-                    connectionCache = DriverManager.getConnection("jdbc:mysql://" + host + ':' + port + '/' + db, user, pass) :
-                    connectionCache);
-        } catch (SQLTimeoutException e) {
-            System.out.println("timeout has been exceeded");
-        } catch (SQLException e) {
-            System.out.println("database access error occurs or the url is null");
-        }
-        return null;
-    }
-
-    public static Connection JDBCGetMySQLConnection(
-            String host, String db, String user, String pass
-    ) {
-        return JDBCGetMySQLConnection(host, db, user, pass, 3306);
-    }
+    private static String user = "testuser";
+    private static String pass = "kiparis351";
+    private static String host = "localhost";
+    private static String db = "testdb";
+    private static int port = 3306;
 
     public static Connection JDBCGetTestConnection() {
-        return JDBCGetMySQLConnection("localhost", "testdb", "testuser", "kiparis351");
+        if (connectionCache == null) {
+            try {
+                System.out.println("Соединение с БД.");
+                connectionCache = DriverManager.getConnection("jdbc:mysql://" + host + ':' + port + '/' + db, user, pass);
+            } catch (SQLTimeoutException e) {
+                System.out.println("timeout has been exceeded " + e);
+            } catch (SQLException e) {
+                System.out.println("database access error occurs or the url is null " + e);
+            }
+        }
+        return connectionCache;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     private static SessionFactory sessionFactory = null;
 
-    public static Session HibernateGetSession(String host, String db, String user, String pass) {
-        return HibernateGetSession(host, db, user, pass, 3306);
-    }
-
-    public static Session HibernateGetSession(String host, String db, String user, String pass, int port) {
+    public static Session HibernateGetSession() {
         if (sessionFactory == null) {
             java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
             sessionFactory = new MetadataSources(new StandardServiceRegistryBuilder()
@@ -63,9 +53,5 @@ public class Util {
                     .addAnnotatedClass(User.class).buildMetadata().getSessionFactoryBuilder().build();
         }
         return sessionFactory.getCurrentSession();
-    }
-
-    public static Session HibernateGetTestSession() {
-        return HibernateGetSession("localhost", "testdb", "testuser", "kiparis351");
     }
 }

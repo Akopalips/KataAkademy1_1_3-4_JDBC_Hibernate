@@ -4,7 +4,6 @@ import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.resource.transaction.spi.TransactionStatus;
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -18,7 +17,7 @@ public class UserDaoHibernateImpl implements UserDao {
     private Session session;
 
     public void openCurrentSessionWithTransaction() {
-        session = Util.HibernateGetTestSession();
+        session = Util.HibernateGetSession();
         transaction = session.beginTransaction();
     }
 
@@ -31,11 +30,11 @@ public class UserDaoHibernateImpl implements UserDao {
     public void createUsersTable() {
         openCurrentSessionWithTransaction();
         session.createSQLQuery(
-                "create table if not exists testUserTable(" +
-                        "name text not null, " +
+                "create table if not exists " + table +
+                        "(name text not null, " +
                         "lastName text not null, " +
                         "age tinyint not null, " +
-                        "id serial primary key);").executeUpdate();//потом переписать чтобы забирать поля из класса для имен и типов столбцов);
+                        "id serial primary key);").executeUpdate();
         closeCurrentSessionWithTransaction();
     }
 

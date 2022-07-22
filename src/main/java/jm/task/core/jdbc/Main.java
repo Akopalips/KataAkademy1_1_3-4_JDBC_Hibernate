@@ -19,9 +19,6 @@ public class Main {
         service.saveUser("Саша", "Великолепная", (byte)21);
         service.saveUser("Эмилия", "Серьёзных", (byte)32);
         service.saveUser("Жук", "Берия", (byte)45);
-        for(User each : service.getAllUsers()){
-            System.out.println(each);
-        }
         service.cleanUsersTable();
         service.dropUsersTable();
     }
