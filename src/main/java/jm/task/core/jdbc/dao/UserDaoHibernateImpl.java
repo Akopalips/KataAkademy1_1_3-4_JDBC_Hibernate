@@ -4,9 +4,7 @@ import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.resource.transaction.spi.TransactionStatus;
 
-import javax.transaction.Transactional;
 import java.util.List;
 
 public class UserDaoHibernateImpl implements UserDao {
@@ -14,75 +12,63 @@ public class UserDaoHibernateImpl implements UserDao {
  Service на этот раз использует реализацию dao через Hibernate
  Методы создания и удаления таблицы пользователей в классе UserHibernateDaoImpl должны быть реализованы с помощью SQL.*/
 
-    private Transaction transaction;
     private Session session;
+    private Transaction transaction;
 
-    public void openCurrentSessionWithTransaction() {
-        session = Util.HibernateGetTestSession();
+
+    public void createUsersTable() {
+        session = Util.HibernateGetSession();
         transaction = session.beginTransaction();
-    }
-
-    public void closeCurrentSessionWithTransaction() {
+        session.createSQLQuery(
+                "create table if not exists " + table +
+                        "(name text not null, " +
+                        "lastName text not null, " +
+                        "age tinyint not null, " +
+                        "id serial primary key)").executeUpdate();
         transaction.commit();
     }
 
-    @Override
-    @Transactional
-    public void createUsersTable() {
-        openCurrentSessionWithTransaction();
-        session.createSQLQuery(
-                "create table if not exists testUserTable(" +
-                        "name text not null, " +
-                        "lastName text not null, " +
-                        "age tinyint not null, " +
-                        "id serial primary key);").executeUpdate();//потом переписать чтобы забирать поля из класса для имен и типов столбцов);
-        closeCurrentSessionWithTransaction();
-    }
-
-    @Override
-    @Transactional
     public void dropUsersTable() {
-        openCurrentSessionWithTransaction();
-        session.createSQLQuery("drop table if exists testUserTable;").executeUpdate();
-        closeCurrentSessionWithTransaction();
+        session = Util.HibernateGetSession();
+        transaction = session.beginTransaction();
+        session.createSQLQuery("drop table if exists testUserTable").executeUpdate();
+        transaction.commit();
     }
 
-    @Override
-    @Transactional
     public void saveUser(String name, String lastName, byte age) {
-        openCurrentSessionWithTransaction();
-        session.save(new User(name, lastName, age));
-        closeCurrentSessionWithTransaction();
-    }
-
-    @Override
-    public void removeUserById(long id) {
-        openCurrentSessionWithTransaction();
-        session.delete(session.get(User.class, id));
-        closeCurrentSessionWithTransaction();
-    }
-
-    public User getUserById(long id) {
-        openCurrentSessionWithTransaction();
-        User out = session.get(User.class, id);
-        closeCurrentSessionWithTransaction();
-        return out;
-    }
-
-    @Override
-    public List<User> getAllUsers() {
         try {
-            openCurrentSessionWithTransaction();
-            return session.createQuery("from testUserTable").list();
+            session = Util.HibernateGetSession();
+            transaction = session.beginTransaction();
+            session.save(new User(name, lastName, age));
+            transaction.commit();
         } finally {
-            closeCurrentSessionWithTransaction();
+                transaction.rollback();
         }
     }
 
-    @Override
+    public void removeUserById(long id) {
+        try {
+            session = Util.HibernateGetSession();
+            transaction = session.beginTransaction();
+            session.delete(session.get(User.class, id));
+            transaction.commit();
+        } finally {
+            transaction.rollback();
+        }
+    }
+
+    public List<User> getAllUsers() {
+        session = Util.HibernateGetSession();
+        transaction = session.beginTransaction();
+        List <User> result = session.createQuery("from testUserTable", User.class).list();
+        transaction.commit();
+        return result;
+    }
+
     public void cleanUsersTable() {
-        openCurrentSessionWithTransaction();
-        session.createSQLQuery("truncate table testUserTable;").executeUpdate();
-        closeCurrentSessionWithTransaction();
+        session = Util.HibernateGetSession();
+        transaction = session.beginTransaction();
+        session.createSQLQuery("truncate table testUserTable").executeUpdate();
+        transaction.commit();
     }
 }

@@ -3,47 +3,84 @@ package jm.task.core.jdbc.dao;
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
-import java.sql.ResultSet;
 
 public class UserDaoJDBCImpl implements UserDao {
 
-    private void simpleVoidQuery(String query) {
-        Connection con = Util.JDBCGetTestConnection();
-        try {
-            con.createStatement().executeUpdate(query);
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-    }
+    private final static Connection connection = Util.JDBCGetTestConnection();
 
     public void createUsersTable() {
-        simpleVoidQuery("create table if not exists testUserTable(" +
-                "name text not null, " +
-                "lastName text not null, " +
-                "age tinyint not null, " +
-                "id serial primary key);");//потом переписать чтобы забирать поля из класса для имен и типов столбцов
+        try (Statement createTable = connection.createStatement()) {
+            createTable.executeUpdate("create table if not exists " + table +
+                            "(name text not null, " +
+                            "lastName text not null, " +
+                            "age tinyint not null, " +
+                            "id serial primary key)");
+        } catch (SQLException e) {
+            System.out.println("При создании таблицы возникла ошибка: " + e.getMessage());
+        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 
     public void dropUsersTable() {
-        simpleVoidQuery("drop table if exists testUserTable;");
+        try (Statement dropTable = connection.createStatement()) {
+            dropTable.executeUpdate("drop table if exists " + table);
+        } catch (SQLException e) {
+            System.out.println("При удалении таблицы возникла ошибка: " + e.getMessage());
+        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 
     public void saveUser(String name, String lastName, byte age) {
-        simpleVoidQuery("insert into testUserTable (name, lastName, age) values('" + name + "','" + lastName + "'," + age + ");");
+        try (PreparedStatement save = connection.prepareStatement("insert into " + table + " (name, lastName, age) values(?, ?, ?)")) {
+            save.setString(1, name);
+            save.setString(2, lastName);
+            save.setByte(3, age);
+            connection.setAutoCommit(false);//неявное начало транзакции == start transaction
+            save.executeUpdate();
+            connection.commit();//явное окончание транзакции
+        } catch (SQLException e) {
+            System.out.println("При добавлении данных в таблицу возникла ошибка: " + e.getMessage());
+            try {
+                connection.rollback();
+            } catch (SQLException rollbackE) {
+                System.out.println("При откате изменений возникла ошибка: " + rollbackE);
+            }
+        } finally {
+            try{
+                connection.setAutoCommit(true);//неявное окончание транзакции == commit
+            }catch (SQLException e){
+                System.out.println("Транзакция не была завершена.");
+            }
+        }
     }
 
     public void removeUserById(long id) {
-        simpleVoidQuery("delete from testUserTable where id ='" + id + "';");
+        try (PreparedStatement remove = connection.prepareStatement("delete from " + table + " where id = ?")) {
+            remove.setLong(1, id);
+            connection.setAutoCommit(false);//неявное начало транзакции == start transaction
+            remove.executeUpdate();
+            connection.commit();//явное окончание транзакции
+        } catch (SQLException e) {
+            System.out.println("При удалении данных из таблицы возникла ошибка: " + e.getMessage());
+            try {
+                connection.rollback();
+            } catch (SQLException rollbackE) {
+                System.out.println("При откате изменений возникла ошибка: " + rollbackE);
+            }
+        } finally {
+            try{
+                connection.setAutoCommit(true);//неявное окончание транзакции == commit
+            }catch (SQLException e){
+                System.out.println("Транзакция не была завершена.");
+            }
+        }
     }
 
     public List<User> getAllUsers() {
         Connection con = Util.JDBCGetTestConnection();
         List<User> result = new ArrayList<>();
         try {
-            ResultSet queryResponse = con.createStatement().executeQuery("select * from testUserTable;");
+            ResultSet queryResponse = con.createStatement().executeQuery("select * from " + table);
             while (queryResponse.next()) {
                 result.add(new User(
                         queryResponse.getString("name"),
@@ -53,12 +90,16 @@ public class UserDaoJDBCImpl implements UserDao {
                 );
             }
         } catch (SQLException e) {
-            System.out.println("connection closed unexpectedly");
+            System.out.println("При выгрузке таблицы возникла ошибка: " + e.getMessage());
         }
         return result;
     }
 
     public void cleanUsersTable() {
-        simpleVoidQuery("truncate table testUserTable;");
+        try (Statement remove = connection.createStatement()) {
+            remove.executeUpdate("truncate table " + table);
+        } catch (SQLException e) {
+            System.out.println("При очищении таблицы возникла ошибка: " + e.getMessage());
+        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 }

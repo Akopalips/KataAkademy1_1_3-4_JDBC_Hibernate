@@ -2,14 +2,6 @@ package jm.task.core.jdbc;
 
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.service.UserServiceImpl;
-import jm.task.core.jdbc.util.Util;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
@@ -19,8 +11,8 @@ public class Main {
         service.saveUser("Саша", "Великолепная", (byte)21);
         service.saveUser("Эмилия", "Серьёзных", (byte)32);
         service.saveUser("Жук", "Берия", (byte)45);
-        for(User each : service.getAllUsers()){
-            System.out.println(each);
+        for (User eachUser : service.getAllUsers()){
+            System.out.println(eachUser);
         }
         service.cleanUsersTable();
         service.dropUsersTable();
