@@ -3,103 +3,79 @@ package jm.task.core.jdbc.dao;
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 
-import java.sql.*;
+import javax.persistence.EntityManager;
 import java.util.*;
 
 public class UserDaoJDBCImpl implements UserDao {
-
-    private final static Connection connection = Util.JDBCGetTestConnection();
+    EntityManager em = Util.JDBCGetTestConnection();
 
     public void createUsersTable() {
-        try (Statement createTable = connection.createStatement()) {
-            createTable.executeUpdate("create table if not exists " + table +
-                            "(name text not null, " +
-                            "lastName text not null, " +
-                            "age tinyint not null, " +
-                            "id serial primary key)");
-        } catch (SQLException e) {
-            System.out.println("При создании таблицы возникла ошибка: " + e.getMessage());
-        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
+        try{
+            em.getTransaction().begin();
+            em.createNativeQuery("create table if not exists " + table +
+                    "(name text not null, " +
+                    "lastName text not null, " +
+                    "age tinyint not null, " +
+                    "id serial primary key)").executeUpdate();
+            em.flush();
+            em.getTransaction().commit();
+        }
+        finally {
+            if(em.getTransaction().isActive()){
+                em.getTransaction().rollback();
+            }
+        }
+        //Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 
     public void dropUsersTable() {
-        try (Statement dropTable = connection.createStatement()) {
-            dropTable.executeUpdate("drop table if exists " + table);
-        } catch (SQLException e) {
-            System.out.println("При удалении таблицы возникла ошибка: " + e.getMessage());
-        }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
+        try{
+            em.getTransaction().begin();
+            em.createNativeQuery("drop table if exists " + table).executeUpdate();
+            em.flush();
+            em.getTransaction().commit();
+        }
+        finally {
+            if(em.getTransaction().isActive()){
+                em.getTransaction().rollback();
+            }
+        }
+        //Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 
     public void saveUser(String name, String lastName, byte age) {
-        try (PreparedStatement save = connection.prepareStatement("insert into " + table + " (name, lastName, age) values(?, ?, ?)")) {
-            save.setString(1, name);
-            save.setString(2, lastName);
-            save.setByte(3, age);
-            connection.setAutoCommit(false);//неявное начало транзакции == start transaction
-            save.executeUpdate();
-            connection.commit();//явное окончание транзакции
-        } catch (SQLException e) {
-            System.out.println("При добавлении данных в таблицу возникла ошибка: " + e.getMessage());
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackE) {
-                System.out.println("При откате изменений возникла ошибка: " + rollbackE);
-            }
-        } finally {
-            try{
-                connection.setAutoCommit(true);//неявное окончание транзакции == commit
-            }catch (SQLException e){
-                System.out.println("Транзакция не была завершена.");
+        try{
+            em.getTransaction().begin();
+            em.persist(new User(name, lastName, age));
+            em.flush();
+            em.getTransaction().commit();
+        }
+        finally {
+            if(em.getTransaction().isActive()){
+                em.getTransaction().rollback();
             }
         }
     }
 
     public void removeUserById(long id) {
-        try (PreparedStatement remove = connection.prepareStatement("delete from " + table + " where id = ?")) {
-            remove.setLong(1, id);
-            connection.setAutoCommit(false);//неявное начало транзакции == start transaction
-            remove.executeUpdate();
-            connection.commit();//явное окончание транзакции
-        } catch (SQLException e) {
-            System.out.println("При удалении данных из таблицы возникла ошибка: " + e.getMessage());
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackE) {
-                System.out.println("При откате изменений возникла ошибка: " + rollbackE);
-            }
-        } finally {
-            try{
-                connection.setAutoCommit(true);//неявное окончание транзакции == commit
-            }catch (SQLException e){
-                System.out.println("Транзакция не была завершена.");
-            }
-        }
+        em.remove(em.find(User.class, id));
     }
 
     public List<User> getAllUsers() {
-        Connection con = Util.JDBCGetTestConnection();
-        List<User> result = new ArrayList<>();
-        try {
-            ResultSet queryResponse = con.createStatement().executeQuery("select * from " + table);
-            while (queryResponse.next()) {
-                result.add(new User(
-                        queryResponse.getString("name"),
-                        queryResponse.getString("lastName"),
-                        queryResponse.getByte("age"),
-                        queryResponse.getLong("id"))
-                );
-            }
-        } catch (SQLException e) {
-            System.out.println("При выгрузке таблицы возникла ошибка: " + e.getMessage());
-        }
-        return result;
+        return  em.createQuery("SELECT e FROM User e").getResultList();
     }
 
     public void cleanUsersTable() {
-        try (Statement remove = connection.createStatement()) {
-            remove.executeUpdate("truncate table " + table);
-        } catch (SQLException e) {
-            System.out.println("При очищении таблицы возникла ошибка: " + e.getMessage());
+        try{
+            em.getTransaction().begin();
+            em.createNativeQuery("truncate table " + table).executeUpdate();
+            em.flush();
+            em.getTransaction().commit();
+        }
+        finally {
+            if(em.getTransaction().isActive()){
+                em.getTransaction().rollback();
+            }
         }//Операция атомарна. Откат невозможен: https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
     }
 }
