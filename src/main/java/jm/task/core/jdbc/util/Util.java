@@ -7,32 +7,19 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.Environment;
 
-import java.sql.DriverManager;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.SQLTimeoutException;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import java.util.logging.Level;
 
 public class Util {
-    private static Connection connectionCache = null;
+    private static String url = "jdbc:mysql://localhost:3306/testdb";
     private static String user = "testuser";
     private static String pass = "kiparis351";
-    private static String host = "localhost";
-    private static String db = "testdb";
-    private static int port = 3306;
 
-    public static Connection JDBCGetTestConnection() {
-        if (connectionCache == null) {
-            try {
-                System.out.println("Соединение с БД.");
-                connectionCache = DriverManager.getConnection("jdbc:mysql://" + host + ':' + port + '/' + db, user, pass);
-            } catch (SQLTimeoutException e) {
-                System.out.println("timeout has been exceeded " + e);
-            } catch (SQLException e) {
-                System.out.println("database access error occurs or the url is null " + e);
-            }
-        }
-        return connectionCache;
+    public static EntityManager JDBCGetTestConnection() {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("testEM");
+        return emf.createEntityManager();
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -44,7 +31,7 @@ public class Util {
             java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
             sessionFactory = new MetadataSources(new StandardServiceRegistryBuilder()
                     .applySetting(Environment.DRIVER, "com.mysql.cj.jdbc.Driver")
-                    .applySetting(Environment.URL, "jdbc:mysql://" + host + ':' + port + '/' + db)
+                    .applySetting(Environment.URL, url)
                     .applySetting(Environment.USER, user)
                     .applySetting(Environment.PASS, pass)
                     .applySetting(Environment.SHOW_SQL, "false")

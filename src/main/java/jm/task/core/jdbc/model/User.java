@@ -2,7 +2,7 @@ package jm.task.core.jdbc.model;
 
 import javax.persistence.*;
 
-@Entity(name = "testUserTable")
+@Entity
 @Table(name = "testUserTable")
 public class User {
     @Id
@@ -18,11 +18,10 @@ public class User {
     @Column
     private Byte age;
 
-    public User (){
-
+    public User() {
     }
 
-    public User (String name, String lastName, Byte age, Long id){
+    public User(String name, String lastName, Byte age, Long id) {
         this(name, lastName, age);
         this.id = id;
     }

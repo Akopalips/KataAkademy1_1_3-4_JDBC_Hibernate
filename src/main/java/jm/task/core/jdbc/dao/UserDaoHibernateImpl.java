@@ -5,6 +5,7 @@ import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
+import javax.transaction.Transactional;
 import java.util.List;
 
 public class UserDaoHibernateImpl implements UserDao {
@@ -12,63 +13,75 @@ public class UserDaoHibernateImpl implements UserDao {
  Service на этот раз использует реализацию dao через Hibernate
  Методы создания и удаления таблицы пользователей в классе UserHibernateDaoImpl должны быть реализованы с помощью SQL.*/
 
-    private Session session;
     private Transaction transaction;
+    private Session session;
 
-
-    public void createUsersTable() {
+    public void openCurrentSessionWithTransaction() {
         session = Util.HibernateGetSession();
         transaction = session.beginTransaction();
+    }
+
+    public void closeCurrentSessionWithTransaction() {
+        transaction.commit();
+    }
+
+    @Override
+    @Transactional
+    public void createUsersTable() {
+        openCurrentSessionWithTransaction();
         session.createSQLQuery(
                 "create table if not exists " + table +
                         "(name text not null, " +
                         "lastName text not null, " +
                         "age tinyint not null, " +
-                        "id serial primary key)").executeUpdate();
-        transaction.commit();
+                        "id serial primary key);").executeUpdate();
+        closeCurrentSessionWithTransaction();
     }
 
+    @Override
+    @Transactional
     public void dropUsersTable() {
-        session = Util.HibernateGetSession();
-        transaction = session.beginTransaction();
-        session.createSQLQuery("drop table if exists testUserTable").executeUpdate();
-        transaction.commit();
+        openCurrentSessionWithTransaction();
+        session.createSQLQuery("drop table if exists testUserTable;").executeUpdate();
+        closeCurrentSessionWithTransaction();
     }
 
+    @Override
+    @Transactional
     public void saveUser(String name, String lastName, byte age) {
-        try {
-            session = Util.HibernateGetSession();
-            transaction = session.beginTransaction();
-            session.save(new User(name, lastName, age));
-            transaction.commit();
-        } finally {
-                transaction.rollback();
-        }
+        openCurrentSessionWithTransaction();
+        session.save(new User(name, lastName, age));
+        closeCurrentSessionWithTransaction();
     }
 
+    @Override
     public void removeUserById(long id) {
+        openCurrentSessionWithTransaction();
+        session.delete(session.get(User.class, id));
+        closeCurrentSessionWithTransaction();
+    }
+
+    public User getUserById(long id) {
+        openCurrentSessionWithTransaction();
+        User out = session.get(User.class, id);
+        closeCurrentSessionWithTransaction();
+        return out;
+    }
+
+    @Override
+    public List<User> getAllUsers() {
         try {
-            session = Util.HibernateGetSession();
-            transaction = session.beginTransaction();
-            session.delete(session.get(User.class, id));
-            transaction.commit();
+            openCurrentSessionWithTransaction();
+            return session.createQuery("from testUserTable").list();
         } finally {
-            transaction.rollback();
+            closeCurrentSessionWithTransaction();
         }
     }
 
-    public List<User> getAllUsers() {
-        session = Util.HibernateGetSession();
-        transaction = session.beginTransaction();
-        List <User> result = session.createQuery("from testUserTable", User.class).list();
-        transaction.commit();
-        return result;
-    }
-
+    @Override
     public void cleanUsersTable() {
-        session = Util.HibernateGetSession();
-        transaction = session.beginTransaction();
-        session.createSQLQuery("truncate table testUserTable").executeUpdate();
-        transaction.commit();
+        openCurrentSessionWithTransaction();
+        session.createSQLQuery("truncate table testUserTable;").executeUpdate();
+        closeCurrentSessionWithTransaction();
     }
 }
