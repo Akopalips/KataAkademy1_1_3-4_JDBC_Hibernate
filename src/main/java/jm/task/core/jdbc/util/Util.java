@@ -13,11 +13,9 @@ import javax.persistence.Persistence;
 import java.util.logging.Level;
 
 public class Util {
+    private static String url = "jdbc:mysql://localhost:3306/testdb";
     private static String user = "testuser";
     private static String pass = "kiparis351";
-    private static String host = "localhost";
-    private static String db = "testdb";
-    private static int port = 3306;
 
     public static EntityManager JDBCGetTestConnection() {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("testEM");
@@ -33,7 +31,7 @@ public class Util {
             java.util.logging.Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
             sessionFactory = new MetadataSources(new StandardServiceRegistryBuilder()
                     .applySetting(Environment.DRIVER, "com.mysql.cj.jdbc.Driver")
-                    .applySetting(Environment.URL, "jdbc:mysql://" + host + ':' + port + '/' + db)
+                    .applySetting(Environment.URL, url)
                     .applySetting(Environment.USER, user)
                     .applySetting(Environment.PASS, pass)
                     .applySetting(Environment.SHOW_SQL, "false")

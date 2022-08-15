@@ -18,8 +18,10 @@ public class User {
     @Column
     private Byte age;
 
-    public User (){}
-    public User (String name, String lastName, Byte age, Long id){
+    public User() {
+    }
+
+    public User(String name, String lastName, Byte age, Long id) {
         this(name, lastName, age);
         this.id = id;
     }
